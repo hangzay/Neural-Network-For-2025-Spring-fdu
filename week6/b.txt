@@ -1,0 +1,45 @@
+def nes(imgs, epsilon, model, labels, sigma, n):
+    """
+    labels: ground truth labels
+    sigma: search variance
+    n: number of samples used for estimation for each img
+    """
+    model.eval()
+
+    adv_xs = imgs.reshape(-1, 28 * 28).float()
+
+    grad = torch.zeros_like(adv_xs)
+    # TODO: Estimate gradient for each sample adv_x in adv_xs
+    # 生成高斯噪声 [batch, n, 1, 28, 28]
+    batch_size = adv_xs.size(0)
+    device = adv_xs.device
+    noise = torch.randn(batch_size, n, 1, 28, 28, device=device)
+    
+    # 创建正负扰动样本 [batch, n, 1, 28, 28]
+    perturbed_plus = adv_xs.unsqueeze(1) + sigma * noise
+    perturbed_minus = adv_xs.unsqueeze(1) - sigma * noise
+    
+    # 合并样本用于批量预测 [2*batch*n, 1, 28, 28]
+    combined = torch.cat([perturbed_plus, perturbed_minus], dim=0)
+    combined = combined.view(-1, 1, 28, 28)
+    
+    # 获取模型预测概率
+    with torch.no_grad():
+        probs = model(combined).softmax(dim=1)
+    
+    # 提取正确标签概率
+    labels_expanded = labels.repeat_interleave(n).repeat(2)
+    correct_probs = probs[torch.arange(2*batch_size*n), labels_expanded]
+    
+    # 计算NES梯度估计
+    pos_probs = correct_probs[:batch_size*n].view(batch_size, n)
+    neg_probs = correct_probs[batch_size*n:].view(batch_size, n)
+    grad = ((pos_probs - neg_probs) / (2*sigma)).unsqueeze(-1).unsqueeze(-1).unsqueeze(-1) * noise
+    grad = grad.mean(dim=1)
+
+    adv_xs = adv_xs.detach() - epsilon * grad.sign()
+    adv_xs = torch.clamp(adv_xs, min=0., max=1.)
+
+    model.train()
+
+    return adv_xs.detach()

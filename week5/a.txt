@@ -1,0 +1,110 @@
+class Generator(nn.Module):
+    def __init__(self, z_dim, mnist_dim):
+        super(Generator, self).__init__()
+        # TODO：定义Generator的结构
+        self.fc = nn.Linear(z_dim, 7 * 7 * 64)
+
+        self.deconv1 = nn.ConvTranspose2d(64, 32, kernel_size=4, stride=2, padding=1)
+        torch.nn.init.normal_(self.deconv1.weight, 0.0, 0.02)
+        self.bn1 = nn.BatchNorm2d(32)
+        torch.nn.init.normal_(self.bn1.weight, 0.0, 0.02) 
+        torch.nn.init.constant_(self.bn1.bias, 0)
+
+        self.deconv2 = nn.ConvTranspose2d(32, 1, kernel_size=4, stride=2, padding=1)
+        torch.nn.init.normal_(self.deconv2.weight, 0.0, 0.02)
+
+    def forward(self, x):
+        # TODO：前向传播
+        x = F.relu(self.fc(x))
+        x = x.view(-1, 64, 7, 7)
+        x = F.relu(self.bn1(self.deconv1(x)))
+        x = torch.sigmoid(self.deconv2(x))
+        return x
+
+class Discriminator(nn.Module):
+    def __init__(self, mnist_dim):
+        super(Discriminator, self).__init__()
+        # TODO：定义Discriminator结构
+        self.conv1 = nn.Conv2d(1, 64, kernel_size=4, stride=2, padding=1)
+        torch.nn.init.normal_(self.conv1.weight, 0.0, 0.02)
+        self.bn1 = nn.BatchNorm2d(64)
+        torch.nn.init.normal_(self.bn1.weight, 0.0, 0.02) 
+        torch.nn.init.constant_(self.bn1.bias, 0)
+
+        self.conv2 = nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1)
+        torch.nn.init.normal_(self.conv2.weight, 0.0, 0.02)
+        self.dropout = nn.Dropout(0.2)
+        self.fc1 = nn.Linear(128 * 7 * 7, 1)
+
+    def forward(self, x):
+        # TODO：前向传播
+        x = F.leaky_relu(self.bn1(self.conv1(x)), 0.2)
+        x = F.leaky_relu(self.conv2(x), 0.2)
+        x = self.dropout(x)
+        x = x.view(-1, 128 * 7 * 7)
+        x = torch.sigmoid(self.fc1(x))
+        return x
+
+
+class Generator(nn.Module):
+    def __init__(self, z_dim, mnist_dim):
+        super(Generator, self).__init__()
+        # TODO：定义Generator的结构
+        self.deconv1 = nn.ConvTranspose2d(z_dim, 256, kernel_size=3, stride=2)
+        torch.nn.init.normal_(self.deconv1.weight, 0.0, 0.02)
+        self.bn1 = nn.BatchNorm2d(256)
+        torch.nn.init.normal_(self.bn1.weight, 0.0, 0.02) 
+        torch.nn.init.constant_(self.bn1.bias, 0)
+
+        self.deconv2 = nn.ConvTranspose2d(256, 128, kernel_size=4, stride=1)
+        torch.nn.init.normal_(self.deconv2.weight, 0.0, 0.02)
+        self.bn2 = nn.BatchNorm2d(128)
+        torch.nn.init.normal_(self.bn2.weight, 0.0, 0.02) 
+        torch.nn.init.constant_(self.bn2.bias, 0)
+
+        self.deconv3 = nn.ConvTranspose2d(128, 64, kernel_size=3, stride=2)
+        torch.nn.init.normal_(self.deconv3.weight, 0.0, 0.02)
+        self.bn3 = nn.BatchNorm2d(64)
+        torch.nn.init.normal_(self.bn3.weight, 0.0, 0.02) 
+        torch.nn.init.constant_(self.bn3.bias, 0)
+
+        self.deconv4 = nn.ConvTranspose2d(64, 1, kernel_size=4, stride=2)
+        torch.nn.init.normal_(self.deconv4.weight, 0.0, 0.02)
+
+    def forward(self, x):
+        # TODO：前向传播
+        x = x.view(len(x), 64, 1, 1)
+        x = F.relu(self.bn1(self.deconv1(x)))
+        x = F.relu(self.bn2(self.deconv2(x)))
+        x = F.relu(self.bn3(self.deconv3(x)))
+        x = torch.tanh(self.deconv4(x))
+        return x
+
+class Discriminator(nn.Module):
+    def __init__(self, mnist_dim):
+        super(Discriminator, self).__init__()
+        # TODO：定义Discriminator结构
+        self.conv1 = nn.Conv2d(1, 16, kernel_size=4, stride=2)
+        torch.nn.init.normal_(self.conv1.weight, 0.0, 0.02)
+        self.bn1 = nn.BatchNorm2d(16)
+        torch.nn.init.normal_(self.bn1.weight, 0.0, 0.02) 
+        torch.nn.init.constant_(self.bn1.bias, 0)
+
+        self.conv2 = nn.Conv2d(16, 32, kernel_size=4, stride=2)
+        torch.nn.init.normal_(self.conv2.weight, 0.0, 0.02)
+        self.bn2 = nn.BatchNorm2d(32)
+        torch.nn.init.normal_(self.bn2.weight, 0.0, 0.02) 
+        torch.nn.init.constant_(self.bn2.bias, 0)
+
+        self.conv3 = nn.Conv2d(32, 1, kernel_size=4, stride=2)
+        torch.nn.init.normal_(self.conv3.weight, 0.0, 0.02)
+        # self.dropout = nn.Dropout(0.2)
+
+    def forward(self, x):
+        # TODO：前向传播
+        x = F.leaky_relu(self.bn1(self.conv1(x)), 0.2)
+        x = F.leaky_relu(self.bn2(self.conv2(x)), 0.2)
+        x = self.conv3(x)
+        x = torch.sigmoid(x)
+        x = x.view(len(x), -1)
+        return x

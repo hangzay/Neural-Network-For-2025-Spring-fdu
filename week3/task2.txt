@@ -1,0 +1,19 @@
+class MLP(nn.Module):
+    def __init__(self):
+        super(MLP, self).__init__()
+        # TODO: 定义上文要求的MLP模型结构
+        self.fc1 = nn.Linear(784, 256)
+        self.fc2 = nn.Linear(256, 128)
+        self.fc3 = nn.Linear(128, 10)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        # TODO: 定义MLP模型的前向过程
+        x = x.reshape(-1, 784)
+        h1 = self.fc1(x)
+        h1 = self.sigmoid(h1)
+        h2 = self.fc2(h1)
+        h2 = self.sigmoid(h2)
+        o = self.fc3(h2)
+        
+        return o
